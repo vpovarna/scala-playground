@@ -13,6 +13,11 @@ import java.time.Instant
 import akka.event.slf4j.Logger
 import akka.http.scaladsl.server.MediaTypeNegotiator
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.MediaType
+import akka.http.scaladsl.model.HttpCharset
+import akka.http.scaladsl.model.HttpCharsets
+import akka.http.scaladsl.model.HttpEntity
 
 case class Person(name: String, age: Int)
 case class UserAdded(id: String, timestamp: Long)
@@ -28,17 +33,24 @@ object AkkaHttpJsonManipulation
 
   implicit val system: ActorSystem = ActorSystem("DemoAkkaApp")
 
+  private val customMediaType: MediaType.WithFixedCharset = MediaType.customWithFixedCharset("application", "vnd.adobe.ranking.v1+json", HttpCharsets.`UTF-8`)
+
   val route: Route =
-    (path("api" / "user") & post) {
+    (path("api" / "user") & post & overwriteEntityContentType) {
       entity(as[Person]) { person =>
-        complete(
-          UserAdded(
-            UUID.randomUUID().toString(),
-            Instant.now().getEpochSecond()
-          )
-        )
+            val userAdded = UserAdded(
+              UUID.randomUUID().toString(),
+              Instant.now().getEpochSecond())
+             complete(HttpEntity(customMediaType, userAdded.toJson.toString))
       }
     }
+
+  def overwriteEntityContentType =
+    mapRequest(req =>
+      req.withEntity(
+        req.entity.withContentType(ContentTypes.`application/json`)
+      )
+    )
 
   def main(args: Array[String]): Unit = {
     Http().newServerAt("localhost", 8081).bind(route)
