@@ -4,6 +4,8 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.Http
+
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 
 import spray.json._
@@ -11,6 +13,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import java.util.UUID
 import java.time.Instant
 import akka.event.slf4j.Logger
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.MediaTypeNegotiator
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import akka.http.scaladsl.model.ContentTypes
@@ -18,6 +21,10 @@ import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.HttpCharset
 import akka.http.scaladsl.model.HttpCharsets
 import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpHeader
+import akka.http.javadsl.model
+import javax.print.attribute.standard.Media
+import akka.http.scaladsl.model.ContentType
 
 case class Person(name: String, age: Int)
 case class UserAdded(id: String, timestamp: Long)
@@ -33,15 +40,18 @@ object AkkaHttpJsonManipulation
 
   implicit val system: ActorSystem = ActorSystem("DemoAkkaApp")
 
-  private val customMediaType: MediaType.WithFixedCharset = MediaType.customWithFixedCharset("application", "vnd.adobe.ranking.v1+json", HttpCharsets.`UTF-8`)
+  val utf8 = HttpCharsets.`UTF-8`
+  val `application/vnd.adobe.ranking.v1+json` = MediaType
+    .customWithFixedCharset("application", "vnd.adobe.ranking.v1+json", utf8)
 
   val route: Route =
     (path("api" / "user") & post & overwriteEntityContentType) {
       entity(as[Person]) { person =>
-            val userAdded = UserAdded(
-              UUID.randomUUID().toString(),
-              Instant.now().getEpochSecond())
-             complete(HttpEntity(customMediaType, userAdded.toJson.toString))
+        val userAdded = UserAdded(
+          UUID.randomUUID().toString(),
+          Instant.now().getEpochSecond()
+        )
+        complete(HttpEntity(`application/vnd.adobe.ranking.v1+json`,userAdded.toJson.toString))
       }
     }
 
