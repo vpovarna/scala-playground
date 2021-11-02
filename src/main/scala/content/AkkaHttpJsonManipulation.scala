@@ -16,11 +16,10 @@ import akka.event.slf4j.Logger
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.MediaTypeNegotiator
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.HttpCharset
 import akka.http.scaladsl.model.HttpCharsets
-import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.javadsl.model
 import javax.print.attribute.standard.Media
@@ -41,7 +40,7 @@ object AkkaHttpJsonManipulation
   implicit val system: ActorSystem = ActorSystem("DemoAkkaApp")
 
   val utf8 = HttpCharsets.`UTF-8`
-  val `application/vnd.adobe.ranking.v1+json` = MediaType
+  val customMediaType = MediaType
     .customWithFixedCharset("application", "vnd.adobe.ranking.v1+json", utf8)
 
   val route: Route =
@@ -51,7 +50,7 @@ object AkkaHttpJsonManipulation
           UUID.randomUUID().toString(),
           Instant.now().getEpochSecond()
         )
-        complete(HttpEntity(`application/vnd.adobe.ranking.v1+json`,userAdded.toJson.toString))
+        complete(201 -> HttpEntity(customMediaType, userAdded.toJson.toString) )
       }
     }
 
